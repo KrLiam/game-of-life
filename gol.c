@@ -206,16 +206,16 @@ stats_t play(cell_t **board, cell_t **newboard, int size)
 
 void print_board(cell_t **board, int size)
 {
-    // int i, j;
-    // /* for each row */
-    // for (j = 0; j < size; j++)
-    // {
-    //     /* print each column position... */
-    //     for (i = 0; i < size; i++)
-    //         printf("%c", board[i][j] ? 'x' : '-');
-    //     /* followed by a carriage return */
-    //     printf("\n");
-    // }
+    int i, j;
+    /* for each row */
+    for (j = 0; j < size; j++)
+    {
+        /* print each column position... */
+        for (i = 0; i < size; i++)
+            printf("%c", board[i][j] ? 'x' : '-');
+        /* followed by a carriage return */
+        printf("\n");
+    }
 }
 
 void print_stats(stats_t stats)
@@ -239,7 +239,6 @@ void read_file(FILE *f, cell_t **board, int size)
         fgets(s, size + 10, f);
         /* copy the string to the life board */
         for (int i = 0; i < size; i++)
-
             board[i][j] = (s[i] == 'x');
     }
 
