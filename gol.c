@@ -212,7 +212,7 @@ void print_board(cell_t **board, int size)
     {
         /* print each column position... */
         for (i = 0; i < size; i++)
-            printf("%c", board[i][j] ? 'x' : '-');
+            printf("%c", board[i][j] ? 'x' : ' ');
         /* followed by a carriage return */
         printf("\n");
     }
