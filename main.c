@@ -36,6 +36,9 @@ int main(int argc, char **argv)
     print_stats(stats_step);
 #endif
 
+    int n_threads = 1; // TODO: criar o arg pra isso dps
+    init(n_threads, size);
+    
     for (int i = 0; i < steps; i++)
     {
         stats_step = play(prev, next, size);
@@ -61,6 +64,7 @@ int main(int argc, char **argv)
     print_stats(stats_total);
 #endif
 
+    end();
     free_board(prev, size);
     free_board(next, size);
 }

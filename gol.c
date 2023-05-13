@@ -14,6 +14,8 @@
  */
 
 #include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
 #include "gol.h"
 
 /* Statistics */
@@ -59,58 +61,147 @@ int adjacent_to(cell_t **board, int size, int i, int j)
     return count;
 }
 
-stats_t play(cell_t **board, cell_t **newboard, int size)
+int g_n_threads;
+int g_size;
+cell_t** g_board;
+cell_t** g_newboard;
+
+pthread_t* threads;
+
+typedef struct {
+    int pos_i;
+    int qnt;
+    stats_t stats;
+} thread_args_t;
+
+pthread_mutex_t mtx_count;
+int count;
+
+sem_t sem_next_frame, sem_threads_done;
+
+thread_args_t* g_args; 
+
+void init(int n_threads, int size) 
 {
-    int i, j, a;
+    pthread_mutex_init(&mtx_count, NULL);
+    sem_init(&sem_next_frame, 0, 0);
+    sem_init(&sem_threads_done, 0, 1);
+    
+    threads = (pthread_t*) malloc(n_threads*sizeof(pthread_t));
+    g_args = (thread_args_t*) malloc(n_threads*sizeof(thread_args_t));
+    
+    stats_t default_stats = {0, 0, 0, 0};
+    int total_size = size * size;
+    int qnt_per_thread = total_size / n_threads;
+    int qnt_remainder = total_size % n_threads;
 
-    stats_t stats = {0, 0, 0, 0};
+    for (int i = 0; i < n_threads; i++) {
+        g_args[i].stats = default_stats;
+        g_args[i].pos_i = i * qnt_per_thread;
+        g_args[i].qnt = qnt_per_thread;
+        if (i == n_threads - 1) {
+            g_args[i].qnt += qnt_remainder;
+        }
+        pthread_create(&threads[i], NULL, thread, (void*) &g_args[i]);
+    }
+    g_n_threads = n_threads;
+}
 
-    /* for each cell, apply the rules of Life */
-    for (i = 0; i < size; i++)
-    {
-        for (j = 0; j < size; j++)
-        {
-            a = adjacent_to(board, size, i, j);
+
+void* thread(void* arg) 
+{
+    while (1) {
+        printf("thread esperando next frame\n");
+        sem_wait(&sem_next_frame);
+        printf("recebeu acesso\n");
+
+        pthread_mutex_lock(&mtx_count);
+        count++;
+        pthread_mutex_unlock(&mtx_count);
+
+        thread_args_t* args = (thread_args_t*) arg;
+
+        int pos_i = args->pos_i;
+        for (int i = pos_i; i < pos_i + args->qnt; i++) {
+            int cur_line = i / g_size;
+            int cur_col = i - cur_line * g_size;
+
+            int a = adjacent_to(g_board, g_size, cur_line, cur_col);
 
             /* if cell is alive */
-            if(board[i][j]) 
+            if(g_board[cur_line][cur_col]) 
             {
                 /* death: loneliness */
-                if(a < 2) {
-                    newboard[i][j] = 0;
-                    stats.loneliness++;
+                if (a < 2) {
+                    g_newboard[cur_line][cur_col] = 0;
+                    args->stats.loneliness++;
                 }
-                else
-                {
-                    /* survival */
-                    if(a == 2 || a == 3)
-                    {
-                        newboard[i][j] = board[i][j];
-                        stats.survivals++;
-                    }
-                    else
-                    {
-                        /* death: overcrowding */
-                        if(a > 3)
-                        {
-                            newboard[i][j] = 0;
-                            stats.overcrowding++;
-                        }
-                    }
+                else if (a == 2 || a == 3) {
+                    g_newboard[cur_line][cur_col] = g_board[cur_line][cur_col];
+                    args->stats.survivals++;
                 }
-                
+                else if (a > 3) {
+                    /* death: overcrowding */
+                    g_newboard[cur_line][cur_col] = 0;
+                    args->stats.overcrowding++;
+                }
             }
             else /* if cell is dead */
             {
                 if(a == 3) /* new born */
                 {
-                    newboard[i][j] = 1;
-                    stats.borns++;
+                    g_newboard[cur_line][cur_col] = 1;
+                    args->stats.borns++;
                 }
-                else /* stay unchanged */
-                    newboard[i][j] = board[i][j];
+                else { 
+                    /* stay unchanged */
+                    g_newboard[cur_line][cur_col] = g_board[cur_line][cur_col];
+                }
             }
         }
+
+        pthread_mutex_lock(&mtx_count);
+        count--;
+        if (!count)
+            sem_post(&sem_threads_done);
+        pthread_mutex_unlock(&mtx_count);
+    }
+}
+
+
+void end()
+{
+    free(threads);
+    free(g_args);
+    pthread_mutex_destroy(&mtx_count);
+    sem_destroy(&sem_next_frame);
+    sem_destroy(&sem_threads_done);
+}
+
+stats_t play(cell_t **board, cell_t **newboard, int size)
+{
+    g_board = board;
+    g_size = size;
+    g_newboard = newboard;
+
+    // Liberar as threads
+    printf("liberando threads\n");
+    count = 0;
+    for (int i = 0; i < g_n_threads; i++)
+        sem_post(&sem_next_frame);
+
+    // Esperar todas as threads acabarem
+    printf("esperando threads acabarem\n");
+    sem_wait(&sem_threads_done);
+    printf("threads acabaram\n");
+
+    // Somar os stats
+    stats_t stats = {0, 0, 0, 0};
+    for (int i = 0; i < g_n_threads; i++) {
+        stats.borns += g_args[i].stats.borns;
+        stats.loneliness += g_args[i].stats.loneliness;
+        stats.overcrowding += g_args[i].stats.overcrowding;
+        stats.survivals += g_args[i].stats.survivals;
     }
 
     return stats;
