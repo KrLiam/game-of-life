@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 
     if (argc != 3)
     {
-        printf("ERRO! Você deve digitar %s <nome do arquivo do tabuleiro> <numero de threads>!\n\n", argv[0]);
+        printf("ERRO! Você deve digitar %s <nome do arquivo do tabuleiro> <número de threads>!\n\n", argv[0]);
         return 0;
     }
 
@@ -19,6 +19,16 @@ int main(int argc, char **argv)
     {
         printf("ERRO! O arquivo de tabuleiro '%s' não existe!\n\n", argv[1]);
         return 0;
+    }
+
+    int n_threads = atoi(argv[2]);
+    if (n_threads < 0) {
+        printf("ERRO! O número de threads deve ser positivo!\n\n");
+        return 0;
+    }
+
+    if (n_threads > size * size) {
+        n_threads = size * size;
     }
 
     fscanf(f, "%d %d", &size, &steps);
@@ -36,7 +46,6 @@ int main(int argc, char **argv)
     print_stats(stats_step);
 #endif
 
-    int n_threads = atoi(argv[2]); // TODO: criar o arg pra isso dps
     init(n_threads, size);
     
     for (int i = 0; i < steps; i++)
