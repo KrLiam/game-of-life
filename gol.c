@@ -85,7 +85,7 @@ void init(int n_threads, int size)
 {
     pthread_mutex_init(&mtx_count, NULL);
     sem_init(&sem_next_frame, 0, 0);
-    sem_init(&sem_threads_done, 0, 1);
+    sem_init(&sem_threads_done, 0, 0);
     
     threads = (pthread_t*) malloc(n_threads*sizeof(pthread_t));
     g_args = (thread_args_t*) malloc(n_threads*sizeof(thread_args_t));
@@ -110,6 +110,8 @@ void init(int n_threads, int size)
 
 void* thread(void* arg) 
 {
+    thread_args_t* args = (thread_args_t*) arg;
+
     while (1) {
         printf("thread esperando next frame\n");
         sem_wait(&sem_next_frame);
@@ -117,11 +119,16 @@ void* thread(void* arg)
 
         pthread_mutex_lock(&mtx_count);
         count++;
+        //printf("incrementa count %d\n", count);
         pthread_mutex_unlock(&mtx_count);
 
-        thread_args_t* args = (thread_args_t*) arg;
+        args->stats.borns = 0;
+        args->stats.loneliness = 0;
+        args->stats.overcrowding = 0;
+        args->stats.survivals = 0;
 
         int pos_i = args->pos_i;
+        printf("começa em %d, vai %d\n", pos_i, args->qnt);
         for (int i = pos_i; i < pos_i + args->qnt; i++) {
             int cur_line = i / g_size;
             int cur_col = i - cur_line * g_size;
@@ -164,6 +171,7 @@ void* thread(void* arg)
         count--;
         if (!count)
             sem_post(&sem_threads_done);
+        // printf("decrementa count %d\n", count);
         pthread_mutex_unlock(&mtx_count);
     }
 }
@@ -215,7 +223,7 @@ void print_board(cell_t **board, int size)
     {
         /* print each column position... */
         for (i = 0; i < size; i++)
-            printf("%c", board[i][j] ? 'x' : ' ');
+            printf("%c", board[i][j] ? 'x' : '-');
         /* followed by a carriage return */
         printf("\n");
     }

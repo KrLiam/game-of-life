@@ -36,11 +36,12 @@ int main(int argc, char **argv)
     print_stats(stats_step);
 #endif
 
-    int n_threads = 1; // TODO: criar o arg pra isso dps
+    int n_threads = 2; // TODO: criar o arg pra isso dps
     init(n_threads, size);
     
     for (int i = 0; i < steps; i++)
     {
+        //printf("roda o for");
         stats_step = play(prev, next, size);
         
         stats_total.borns += stats_step.borns;
