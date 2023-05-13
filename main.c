@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "gol.h"
 
 int main(int argc, char **argv)
@@ -21,8 +22,10 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    fscanf(f, "%d %d", &size, &steps);
+
     int n_threads = atoi(argv[2]);
-    if (n_threads < 0) {
+    if (n_threads <= 0) {
         printf("ERRO! O número de threads deve ser positivo!\n\n");
         return 0;
     }
@@ -30,8 +33,6 @@ int main(int argc, char **argv)
     if (n_threads > size * size) {
         n_threads = size * size;
     }
-
-    fscanf(f, "%d %d", &size, &steps);
 
     prev = allocate_board(size);
     next = allocate_board(size);

@@ -82,8 +82,11 @@ sem_t sem_threads_done;
 
 thread_args_t* g_args; 
 
+int finalizar;
+
 void init(int n_threads, int size) 
 {
+    finalizar = 0;
     pthread_mutex_init(&mtx_count, NULL);
     sem_init(&sem_threads_done, 0, 0);
     
@@ -115,6 +118,9 @@ void* thread(void* arg)
 
     while (1) {
         sem_wait(&args->sem);
+
+        if (finalizar)
+            pthread_exit(NULL);
 
         args->stats.borns = 0;
         args->stats.loneliness = 0;
@@ -170,6 +176,10 @@ void* thread(void* arg)
 
 void end()
 {
+    // Finalizar as threads
+    finalizar = 1;
+    for (int i = 0; i < g_n_threads; i++)
+        sem_post(&g_args[i].sem);
     free(threads);
     free(g_args);
     pthread_mutex_destroy(&mtx_count);
@@ -206,16 +216,16 @@ stats_t play(cell_t **board, cell_t **newboard, int size)
 
 void print_board(cell_t **board, int size)
 {
-    int i, j;
-    /* for each row */
-    for (j = 0; j < size; j++)
-    {
-        /* print each column position... */
-        for (i = 0; i < size; i++)
-            printf("%c", board[i][j] ? 'x' : ' ');
-        /* followed by a carriage return */
-        printf("\n");
-    }
+    // int i, j;
+    // /* for each row */
+    // for (j = 0; j < size; j++)
+    // {
+    //     /* print each column position... */
+    //     for (i = 0; i < size; i++)
+    //         printf("%c", board[i][j] ? 'x' : ' ');
+    //     /* followed by a carriage return */
+    //     printf("\n");
+    // }
 }
 
 void print_stats(stats_t stats)
