@@ -71,20 +71,20 @@ pthread_t* threads;
 typedef struct {
     int pos_i;
     int qnt;
+    sem_t sem;
     stats_t stats;
 } thread_args_t;
 
 pthread_mutex_t mtx_count;
 int count;
 
-sem_t sem_next_frame, sem_threads_done;
+sem_t sem_threads_done;
 
 thread_args_t* g_args; 
 
 void init(int n_threads, int size) 
 {
     pthread_mutex_init(&mtx_count, NULL);
-    sem_init(&sem_next_frame, 0, 0);
     sem_init(&sem_threads_done, 0, 0);
     
     threads = (pthread_t*) malloc(n_threads*sizeof(pthread_t));
@@ -96,6 +96,7 @@ void init(int n_threads, int size)
     int qnt_remainder = total_size % n_threads;
 
     for (int i = 0; i < n_threads; i++) {
+        sem_init(&g_args[i].sem, 0, 0);
         g_args[i].stats = default_stats;
         g_args[i].pos_i = i * qnt_per_thread;
         g_args[i].qnt = qnt_per_thread;
@@ -113,14 +114,7 @@ void* thread(void* arg)
     thread_args_t* args = (thread_args_t*) arg;
 
     while (1) {
-        printf("thread esperando next frame\n");
-        sem_wait(&sem_next_frame);
-        printf("recebeu acesso\n");
-
-        pthread_mutex_lock(&mtx_count);
-        count++;
-        //printf("incrementa count %d\n", count);
-        pthread_mutex_unlock(&mtx_count);
+        sem_wait(&args->sem);
 
         args->stats.borns = 0;
         args->stats.loneliness = 0;
@@ -128,7 +122,6 @@ void* thread(void* arg)
         args->stats.survivals = 0;
 
         int pos_i = args->pos_i;
-        printf("começa em %d, vai %d\n", pos_i, args->qnt);
         for (int i = pos_i; i < pos_i + args->qnt; i++) {
             int cur_line = i / g_size;
             int cur_col = i - cur_line * g_size;
@@ -166,12 +159,10 @@ void* thread(void* arg)
                 }
             }
         }
-
         pthread_mutex_lock(&mtx_count);
         count--;
         if (!count)
             sem_post(&sem_threads_done);
-        // printf("decrementa count %d\n", count);
         pthread_mutex_unlock(&mtx_count);
     }
 }
@@ -182,7 +173,8 @@ void end()
     free(threads);
     free(g_args);
     pthread_mutex_destroy(&mtx_count);
-    sem_destroy(&sem_next_frame);
+    for (int i = 0; i < g_n_threads; i++)
+        sem_destroy(&g_args[i].sem);
     sem_destroy(&sem_threads_done);
 }
 
@@ -190,18 +182,15 @@ stats_t play(cell_t **board, cell_t **newboard, int size)
 {
     g_board = board;
     g_size = size;
-    g_newboard = newboard;
 
+    g_newboard = newboard;
     // Liberar as threads
-    printf("liberando threads\n");
-    count = 0;
+    count = g_n_threads;
     for (int i = 0; i < g_n_threads; i++)
-        sem_post(&sem_next_frame);
+        sem_post(&g_args[i].sem);
 
     // Esperar todas as threads acabarem
-    printf("esperando threads acabarem\n");
     sem_wait(&sem_threads_done);
-    printf("threads acabaram\n");
 
     // Somar os stats
     stats_t stats = {0, 0, 0, 0};
@@ -213,20 +202,20 @@ stats_t play(cell_t **board, cell_t **newboard, int size)
     }
 
     return stats;
-}
+    }
 
 void print_board(cell_t **board, int size)
 {
-    int i, j;
-    /* for each row */
-    for (j = 0; j < size; j++)
-    {
-        /* print each column position... */
-        for (i = 0; i < size; i++)
-            printf("%c", board[i][j] ? 'x' : '-');
-        /* followed by a carriage return */
-        printf("\n");
-    }
+    // int i, j;
+    // /* for each row */
+    // for (j = 0; j < size; j++)
+    // {
+    //     /* print each column position... */
+    //     for (i = 0; i < size; i++)
+    //         printf("%c", board[i][j] ? 'x' : '-');
+    //     /* followed by a carriage return */
+    //     printf("\n");
+    // }
 }
 
 void print_stats(stats_t stats)
@@ -248,9 +237,9 @@ void read_file(FILE *f, cell_t **board, int size)
     {
         /* get a string */
         fgets(s, size + 10, f);
-
         /* copy the string to the life board */
         for (int i = 0; i < size; i++)
+
             board[i][j] = (s[i] == 'x');
     }
 

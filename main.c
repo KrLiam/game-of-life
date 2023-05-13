@@ -9,9 +9,9 @@ int main(int argc, char **argv)
     stats_t stats_step = {0, 0, 0, 0};
     stats_t stats_total = {0, 0, 0, 0};
 
-    if (argc != 2)
+    if (argc != 3)
     {
-        printf("ERRO! Você deve digitar %s <nome do arquivo do tabuleiro>!\n\n", argv[0]);
+        printf("ERRO! Você deve digitar %s <nome do arquivo do tabuleiro> <numero de threads>!\n\n", argv[0]);
         return 0;
     }
 
@@ -36,12 +36,11 @@ int main(int argc, char **argv)
     print_stats(stats_step);
 #endif
 
-    int n_threads = 2; // TODO: criar o arg pra isso dps
+    int n_threads = atoi(argv[2]); // TODO: criar o arg pra isso dps
     init(n_threads, size);
     
     for (int i = 0; i < steps; i++)
     {
-        //printf("roda o for");
         stats_step = play(prev, next, size);
         
         stats_total.borns += stats_step.borns;
