@@ -161,11 +161,7 @@ void* thread(void* arg)
                 }
             }
         }
-            sem_post(&sem_threads_done);
-            sem_post(&sem_threads_done);
-        pthread_mutex_unlock(&mtx_count);
         sem_post(&sem_threads_done);
-        pthread_mutex_unlock(&mtx_count);
     }
 }
 
