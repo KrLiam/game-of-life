@@ -75,9 +75,6 @@ typedef struct {
     stats_t stats;
 } thread_args_t;
 
-pthread_mutex_t mtx_count;
-int count;
-
 sem_t sem_threads_done;
 
 thread_args_t* g_args; 
@@ -87,7 +84,6 @@ int finalizar;
 void init(int n_threads, int size) 
 {
     finalizar = 0;
-    pthread_mutex_init(&mtx_count, NULL);
     sem_init(&sem_threads_done, 0, 0);
     
     threads = (pthread_t*) malloc(n_threads*sizeof(pthread_t));
@@ -165,10 +161,10 @@ void* thread(void* arg)
                 }
             }
         }
-        pthread_mutex_lock(&mtx_count);
-        count--;
-        if (!count)
             sem_post(&sem_threads_done);
+            sem_post(&sem_threads_done);
+        pthread_mutex_unlock(&mtx_count);
+        sem_post(&sem_threads_done);
         pthread_mutex_unlock(&mtx_count);
     }
 }
@@ -182,7 +178,6 @@ void end()
         sem_post(&g_args[i].sem);
     free(threads);
     free(g_args);
-    pthread_mutex_destroy(&mtx_count);
     for (int i = 0; i < g_n_threads; i++)
         sem_destroy(&g_args[i].sem);
     sem_destroy(&sem_threads_done);
@@ -195,12 +190,12 @@ stats_t play(cell_t **board, cell_t **newboard, int size)
 
     g_newboard = newboard;
     // Liberar as threads
-    count = g_n_threads;
     for (int i = 0; i < g_n_threads; i++)
         sem_post(&g_args[i].sem);
 
     // Esperar todas as threads acabarem
-    sem_wait(&sem_threads_done);
+    for (int i = 0; i < g_n_threads; i++)
+        sem_wait(&sem_threads_done);
 
     // Somar os stats
     stats_t stats = {0, 0, 0, 0};
