@@ -187,7 +187,10 @@ void end()
 }
 
 stats_t play(cell_t **board, cell_t **newboard, int size)
-{    
+{
+    g_board = board;
+    g_newboard = newboard;
+
     // Liberar as threads
     for (int i = 0; i < g_n_threads; i++)
         sem_post(&g_args[i].sem);
