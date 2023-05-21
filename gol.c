@@ -81,12 +81,10 @@ thread_args_t* g_args;
 
 int finalizar;
 
-void init(int n_threads, int size, cell_t **board, cell_t **newboard) 
+void init(int n_threads, int size) 
 {
     g_n_threads = n_threads;
     g_size = size;
-    g_board = board;
-    g_newboard = newboard;
 
     finalizar = 0;
     sem_init(&sem_threads_done, 0, 0);
