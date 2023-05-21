@@ -81,8 +81,13 @@ thread_args_t* g_args;
 
 int finalizar;
 
-void init(int n_threads, int size) 
+void init(int n_threads, int size, cell_t **board, cell_t **newboard) 
 {
+    g_n_threads = n_threads;
+    g_size = size;
+    g_board = board;
+    g_newboard = newboard;
+
     finalizar = 0;
     sem_init(&sem_threads_done, 0, 0);
     
@@ -104,7 +109,6 @@ void init(int n_threads, int size)
         }
         pthread_create(&threads[i], NULL, thread, (void*) &g_args[i]);
     }
-    g_n_threads = n_threads;
 }
 
 
@@ -161,6 +165,7 @@ void* thread(void* arg)
                 }
             }
         }
+
         sem_post(&sem_threads_done);
     }
 }
@@ -172,19 +177,17 @@ void end()
     finalizar = 1;
     for (int i = 0; i < g_n_threads; i++)
         sem_post(&g_args[i].sem);
-    free(threads);
-    free(g_args);
+
     for (int i = 0; i < g_n_threads; i++)
         sem_destroy(&g_args[i].sem);
     sem_destroy(&sem_threads_done);
+
+    free(threads);
+    free(g_args);
 }
 
 stats_t play(cell_t **board, cell_t **newboard, int size)
-{
-    g_board = board;
-    g_size = size;
-
-    g_newboard = newboard;
+{    
     // Liberar as threads
     for (int i = 0; i < g_n_threads; i++)
         sem_post(&g_args[i].sem);
@@ -203,7 +206,7 @@ stats_t play(cell_t **board, cell_t **newboard, int size)
     }
 
     return stats;
-    }
+}
 
 void print_board(cell_t **board, int size)
 {

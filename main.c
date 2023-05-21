@@ -47,7 +47,7 @@ int main(int argc, char **argv)
     print_stats(stats_step);
 #endif
 
-    init(n_threads, size);
+    init(n_threads, size, prev, next);
     
     for (int i = 0; i < steps; i++)
     {
