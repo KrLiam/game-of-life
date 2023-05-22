@@ -71,23 +71,15 @@ pthread_t* threads;
 typedef struct {
     int pos_i;
     int qnt;
-    sem_t sem;
     stats_t stats;
 } thread_args_t;
 
-sem_t sem_threads_done;
-
 thread_args_t* g_args; 
-
-int finalizar;
 
 void init(int n_threads, int size) 
 {
     g_n_threads = n_threads;
     g_size = size;
-
-    finalizar = 0;
-    sem_init(&sem_threads_done, 0, 0);
     
     threads = (pthread_t*) malloc(n_threads*sizeof(pthread_t));
     g_args = (thread_args_t*) malloc(n_threads*sizeof(thread_args_t));
@@ -98,14 +90,12 @@ void init(int n_threads, int size)
     int qnt_remainder = total_size % n_threads;
 
     for (int i = 0; i < n_threads; i++) {
-        sem_init(&g_args[i].sem, 0, 0);
         g_args[i].stats = default_stats;
         g_args[i].pos_i = i * qnt_per_thread;
         g_args[i].qnt = qnt_per_thread;
         if (i == n_threads - 1) {
             g_args[i].qnt += qnt_remainder;
         }
-        pthread_create(&threads[i], NULL, thread, (void*) &g_args[i]);
     }
 }
 
@@ -114,72 +104,56 @@ void* thread(void* arg)
 {
     thread_args_t* args = (thread_args_t*) arg;
 
-    while (1) {
-        sem_wait(&args->sem);
+    args->stats.borns = 0;
+    args->stats.loneliness = 0;
+    args->stats.overcrowding = 0;
+    args->stats.survivals = 0;
 
-        if (finalizar)
-            pthread_exit(NULL);
+    int pos_i = args->pos_i;
+    for (int i = pos_i; i < pos_i + args->qnt; i++) {
+        int cur_line = i / g_size;
+        int cur_col = i - cur_line * g_size;
 
-        args->stats.borns = 0;
-        args->stats.loneliness = 0;
-        args->stats.overcrowding = 0;
-        args->stats.survivals = 0;
+        int a = adjacent_to(g_board, g_size, cur_line, cur_col);
 
-        int pos_i = args->pos_i;
-        for (int i = pos_i; i < pos_i + args->qnt; i++) {
-            int cur_line = i / g_size;
-            int cur_col = i - cur_line * g_size;
-
-            int a = adjacent_to(g_board, g_size, cur_line, cur_col);
-
-            /* if cell is alive */
-            if(g_board[cur_line][cur_col]) 
-            {
-                /* death: loneliness */
-                if (a < 2) {
-                    g_newboard[cur_line][cur_col] = 0;
-                    args->stats.loneliness++;
-                }
-                else if (a == 2 || a == 3) {
-                    g_newboard[cur_line][cur_col] = g_board[cur_line][cur_col];
-                    args->stats.survivals++;
-                }
-                else if (a > 3) {
-                    /* death: overcrowding */
-                    g_newboard[cur_line][cur_col] = 0;
-                    args->stats.overcrowding++;
-                }
+        /* if cell is alive */
+        if(g_board[cur_line][cur_col]) 
+        {
+            /* death: loneliness */
+            if (a < 2) {
+                g_newboard[cur_line][cur_col] = 0;
+                args->stats.loneliness++;
             }
-            else /* if cell is dead */
-            {
-                if(a == 3) /* new born */
-                {
-                    g_newboard[cur_line][cur_col] = 1;
-                    args->stats.borns++;
-                }
-                else { 
-                    /* stay unchanged */
-                    g_newboard[cur_line][cur_col] = g_board[cur_line][cur_col];
-                }
+            else if (a == 2 || a == 3) {
+                g_newboard[cur_line][cur_col] = g_board[cur_line][cur_col];
+                args->stats.survivals++;
+            }
+            else if (a > 3) {
+                /* death: overcrowding */
+                g_newboard[cur_line][cur_col] = 0;
+                args->stats.overcrowding++;
             }
         }
-
-        sem_post(&sem_threads_done);
+        else /* if cell is dead */
+        {
+            if(a == 3) /* new born */
+            {
+                g_newboard[cur_line][cur_col] = 1;
+                args->stats.borns++;
+            }
+            else { 
+                /* stay unchanged */
+                g_newboard[cur_line][cur_col] = g_board[cur_line][cur_col];
+            }
+        }
     }
+
+    pthread_exit(NULL);
 }
 
 
 void end()
 {
-    // Finalizar as threads
-    finalizar = 1;
-    for (int i = 0; i < g_n_threads; i++)
-        sem_post(&g_args[i].sem);
-
-    for (int i = 0; i < g_n_threads; i++)
-        sem_destroy(&g_args[i].sem);
-    sem_destroy(&sem_threads_done);
-
     free(threads);
     free(g_args);
 }
@@ -190,12 +164,14 @@ stats_t play(cell_t **board, cell_t **newboard, int size)
     g_newboard = newboard;
 
     // Liberar as threads
-    for (int i = 0; i < g_n_threads; i++)
-        sem_post(&g_args[i].sem);
+    for (int i = 0; i < g_n_threads; i++) {
+        pthread_create(&threads[i], NULL, thread, (void*) &g_args[i]);
+    }
 
     // Esperar todas as threads acabarem
-    for (int i = 0; i < g_n_threads; i++)
-        sem_wait(&sem_threads_done);
+    for (int i = 0; i < g_n_threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
 
     // Somar os stats
     stats_t stats = {0, 0, 0, 0};
