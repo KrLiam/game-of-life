@@ -1,7 +1,9 @@
 from argparse import ArgumentParser
 from multiprocessing import Process, Pipe, current_process
+import operator
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
+from functools import reduce
 
 
 Matriz = list[list[int]]
@@ -35,7 +37,6 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
             for j in range(9):
                 thread_items[(9 * i + j) % num_threads].append((i, j))
 
-        set_erros = set()
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             futures = [
                 executor.submit(
@@ -44,15 +45,15 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
                     sets_regioes,
                     sets_linhas,
                     sets_colunas,
-                    matriz,
-                    set_erros
+                    matriz
                 )
                 for n in range(num_threads)
             ]
 
         results = [future.result() for future in futures]
 
-        erros_totais = sum(sum(len(s) for s in thread) for thread in results)
+        flat_results = reduce(lambda v, acc: acc.union(v), (s for thread in results for s in thread), set())
+        erros_totais = len(flat_results)
 
         print(f"{current_process().name}: {erros_totais} erros encontrados ", end="")
 
@@ -79,8 +80,7 @@ def thread_funk(
     sets_regioes: list[set[int]],
     sets_linhas: list[set[int]],
     sets_colunas: list[set[int]],
-    matriz: Matriz,
-    set_erros: set
+    matriz: Matriz
 ):
     linhas_com_erro = set()
     colunas_com_erro = set()
@@ -90,26 +90,22 @@ def thread_funk(
         i, j = posicao
         regiao = REGIOES[posicao]
 
-        if (f"L{i + 1}" not in set_erros) and (f"C{j + 1}" not in set_erros) and (f"R{regiao + 1}" not in set_erros):
-            numero = matriz[i][j]
+        numero = matriz[i][j]
 
-            size_l = len(sets_linhas[i])
-            size_c = len(sets_colunas[j])
-            size_r = len(sets_regioes[regiao])
+        size_l = len(sets_linhas[i])
+        size_c = len(sets_colunas[j])
+        size_r = len(sets_regioes[regiao])
 
-            sets_linhas[i].add(numero)
-            sets_colunas[j].add(numero)
-            sets_regioes[regiao].add(numero)
+        sets_linhas[i].add(numero)
+        sets_colunas[j].add(numero)
+        sets_regioes[regiao].add(numero)
 
-            if len(sets_linhas[i]) == size_l:
-                linhas_com_erro.add(i)
-                set_erros.add(f"L{i + 1}")
-            if len(sets_colunas[j]) == size_c:
-                colunas_com_erro.add(j)
-                set_erros.add(f"C{j + 1}")
-            if len(sets_regioes[regiao]) == size_r:
-                regioes_com_erro.add(regiao)
-                set_erros.add(f"R{regiao + 1}")
+        if len(sets_linhas[i]) == size_l:
+            linhas_com_erro.add(i)
+        if len(sets_colunas[j]) == size_c:
+            colunas_com_erro.add(j)
+        if len(sets_regioes[regiao]) == size_r:
+            regioes_com_erro.add(regiao)
 
     return linhas_com_erro, colunas_com_erro, regioes_com_erro
 
