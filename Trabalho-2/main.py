@@ -77,37 +77,25 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
 
 def thread_funk(
     matriz: Matriz,
-    thread_items: list[tuple[int, int]],
-    sets_linhas,
-    sets_colunas,
-    sets_regioes,
+    linhas: list[int, list[int]],
+    colunas: list[int, list[int]]
+    regioes: list[int, list[int]]
 ):
     linhas_com_erro = set()
     colunas_com_erro = set()
     regioes_com_erro = set()
 
-    for posicao in thread_items:
-        regiao = REGIOES[posicao]
-        i, j = posicao
-        numero = matriz[i][j]
+    for i, linha in linhas:
+        if len(set(linha)) != 9:
+            linhas_com_erro.add(f'L{i+1}')
 
-        with sets_linhas[i][1]:
-            if numero not in sets_linhas[i][0]:
-                sets_linhas[i][0].add(numero)
-            else:
-                linhas_com_erro.add(f'L{i+1}')
-
-        with sets_colunas[i][1]:
-            if numero not in sets_colunas[j][0]:
-                sets_colunas[j][0].add(numero)
-            else:
-                colunas_com_erro.add(f'C{j+1}')
-
-        with sets_regioes[regiao][1]:
-            if numero not in sets_regioes[regiao][0]:
-                sets_regioes[regiao][0].add(numero)
-            else:
-                regioes_com_erro.add(f'R{regiao+1}')
+    for j, coluna in colunas:
+        if len(set(coluna)) != 9:
+            colunas_com_erro.add(f'C{j+1}')
+    
+    for r, regiao in regioes:
+        if len(set(coluna)) != 9:
+            colunas_com_erro.add(f'C{j+1}')
 
     return linhas_com_erro, colunas_com_erro, regioes_com_erro
 
