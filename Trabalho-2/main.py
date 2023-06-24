@@ -52,7 +52,7 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
 
         results = [future.result() for future in futures]
 
-        flat_results = reduce(lambda v, acc: acc.union(v), (s for thread in results for s in thread), set())
+        flat_results = reduce(lambda v, acc: acc.union(v), (s for s in results), set())
         erros_totais = len(flat_results)
 
         print(f"{current_process().name}: {erros_totais} erros encontrados ", end="")
@@ -61,14 +61,9 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
             print("(", end="")
 
             threads = []
-            for i, (linhas, colunas, regioes) in enumerate(results):
-                l = (f"{n}" for n in linhas)
-                c = (f"{n}" for n in colunas)
-                r = (f"{n}" for n in regioes)
-
-                thread_erros = (*l, *c, *r)
-                if thread_erros:
-                    threads.append(f"T{i+1}: " + ", ".join(thread_erros))
+            for i, erros in enumerate(results):
+                if erros:
+                    threads.append(f"T{i+1}: " + ", ".join(sorted(erros)))
 
             print("; ".join(threads), end=")")
 
@@ -82,9 +77,7 @@ def thread_funk(
     sets_colunas,
     sets_regioes,
 ):
-    linhas_com_erro = set()
-    colunas_com_erro = set()
-    regioes_com_erro = set()
+    erros = set()
 
     for posicao in thread_items:
         regiao = REGIOES[posicao]
@@ -95,21 +88,21 @@ def thread_funk(
             if numero not in sets_linhas[i][0]:
                 sets_linhas[i][0].add(numero)
             else:
-                linhas_com_erro.add(f'L{i+1}')
+                erros.add(f'L{i+1}')
 
         with sets_colunas[i][1]:
             if numero not in sets_colunas[j][0]:
                 sets_colunas[j][0].add(numero)
             else:
-                colunas_com_erro.add(f'C{j+1}')
+                erros.add(f'C{j+1}')
 
         with sets_regioes[regiao][1]:
             if numero not in sets_regioes[regiao][0]:
                 sets_regioes[regiao][0].add(numero)
             else:
-                regioes_com_erro.add(f'R{regiao+1}')
+                erros.add(f'R{regiao+1}')
 
-    return linhas_com_erro, colunas_com_erro, regioes_com_erro
+    return erros
 
 
 def sudoku(arquivo: str, num_processos: int, num_threads: int):
