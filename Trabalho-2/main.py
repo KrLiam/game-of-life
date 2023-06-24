@@ -55,19 +55,17 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
         flat_results = reduce(lambda v, acc: acc.union(v), (s for s in results), set())
         erros_totais = len(flat_results)
 
-        print(f"{current_process().name}: {erros_totais} erros encontrados ", end="")
+        msg = f"{current_process().name}: {erros_totais} erros encontrados "
 
         if erros_totais:
-            print("(", end="")
-
             threads = []
             for i, erros in enumerate(results):
                 if erros:
                     threads.append(f"T{i+1}: " + ", ".join(sorted(erros)))
 
-            print("; ".join(threads), end=")")
+            msg += "(" + "; ".join(threads) + ")"
 
-        print()
+        print(msg)
 
 
 def thread_funk(
