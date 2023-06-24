@@ -1,7 +1,6 @@
 from argparse import ArgumentParser
-from multiprocessing import Process, Pipe, current_process
-import operator
-from threading import Thread
+from multiprocessing import Process, current_process
+from threading import Lock
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 
@@ -22,15 +21,16 @@ def ler_solucoes(arquivo: str) -> list[Matriz]:
     return boards
 
 
+
 def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
     for numero, matriz in matrizes:
         print(f"{current_process().name}: resolvendo quebra-cabeças {numero}")
 
         thread_items = [[] for _ in range(num_threads)]
 
-        sets_linhas = [set() for _ in range(9)]
-        sets_colunas = [set() for _ in range(9)]
-        sets_regioes = [set() for _ in range(9)]
+        sets_linhas = [(set(), Lock()) for _ in range(9)]
+        sets_colunas = [(set(), Lock()) for _ in range(9)]
+        sets_regioes = [(set(), Lock()) for _ in range(9)]
 
         # dividir os itens para as threads
         for i in range(9):
@@ -41,11 +41,11 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
             futures = [
                 executor.submit(
                     thread_funk,
+                    matriz,
                     thread_items[n],
-                    sets_regioes,
                     sets_linhas,
                     sets_colunas,
-                    matriz
+                    sets_regioes
                 )
                 for n in range(num_threads)
             ]
@@ -76,36 +76,38 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
 
 
 def thread_funk(
+    matriz: Matriz,
     thread_items: list[tuple[int, int]],
-    sets_regioes: list[set[int]],
-    sets_linhas: list[set[int]],
-    sets_colunas: list[set[int]],
-    matriz: Matriz
+    sets_linhas,
+    sets_colunas,
+    sets_regioes,
 ):
     linhas_com_erro = set()
     colunas_com_erro = set()
     regioes_com_erro = set()
 
     for posicao in thread_items:
-        i, j = posicao
         regiao = REGIOES[posicao]
-
+        i, j = posicao
         numero = matriz[i][j]
 
-        size_l = len(sets_linhas[i])
-        size_c = len(sets_colunas[j])
-        size_r = len(sets_regioes[regiao])
+        with sets_linhas[i][1]:
+            if numero not in sets_linhas[i][0]:
+                sets_linhas[i][0].add(numero)
+            else:
+                linhas_com_erro.add(f'L{i+1}')
 
-        sets_linhas[i].add(numero)
-        sets_colunas[j].add(numero)
-        sets_regioes[regiao].add(numero)
+        with sets_colunas[i][1]:
+            if numero not in sets_colunas[j][0]:
+                sets_colunas[j][0].add(numero)
+            else:
+                colunas_com_erro.add(f'C{j+1}')
 
-        if len(sets_linhas[i]) == size_l:
-            linhas_com_erro.add(f'L{i+1}')
-        if len(sets_colunas[j]) == size_c:
-            colunas_com_erro.add(f'C{j+1}')
-        if len(sets_regioes[regiao]) == size_r:
-            regioes_com_erro.add(f'R{regiao+1}')
+        with sets_regioes[regiao][1]:
+            if numero not in sets_regioes[regiao][0]:
+                sets_regioes[regiao][0].add(numero)
+            else:
+                regioes_com_erro.add(f'R{regiao+1}')
 
     return linhas_com_erro, colunas_com_erro, regioes_com_erro
 
