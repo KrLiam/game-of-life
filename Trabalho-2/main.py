@@ -62,9 +62,9 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
 
             threads = []
             for i, (linhas, colunas, regioes) in enumerate(results):
-                l = (f"L{n+1}" for n in linhas)
-                c = (f"C{n+1}" for n in colunas)
-                r = (f"R{n+1}" for n in regioes)
+                l = (f"{n}" for n in linhas)
+                c = (f"{n}" for n in colunas)
+                r = (f"{n}" for n in regioes)
 
                 thread_erros = (*l, *c, *r)
                 if thread_erros:
@@ -101,11 +101,11 @@ def thread_funk(
         sets_regioes[regiao].add(numero)
 
         if len(sets_linhas[i]) == size_l:
-            linhas_com_erro.add(i)
+            linhas_com_erro.add(f'L{i+1}')
         if len(sets_colunas[j]) == size_c:
-            colunas_com_erro.add(j)
+            colunas_com_erro.add(f'C{j+1}')
         if len(sets_regioes[regiao]) == size_r:
-            regioes_com_erro.add(regiao)
+            regioes_com_erro.add(f'R{regiao+1}')
 
     return linhas_com_erro, colunas_com_erro, regioes_com_erro
 
