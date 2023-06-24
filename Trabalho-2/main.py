@@ -1,11 +1,26 @@
 from argparse import ArgumentParser
+from collections import namedtuple
+from enum import Enum
 from multiprocessing import Process, current_process
 from threading import Lock
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
+from typing import NamedTuple
 
 
 Matriz = list[list[int]]
+
+
+class TestType(Enum):
+    LINHA = "L"
+    COLUNA = "C"
+    REGIAO = "R"
+
+
+class Test(NamedTuple):
+    i: int
+    tipo: TestType
+    elementos: list[int]
 
 
 def ler_solucoes(arquivo: str) -> list[Matriz]:
@@ -21,32 +36,29 @@ def ler_solucoes(arquivo: str) -> list[Matriz]:
     return boards
 
 
-
 def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
     for numero, matriz in matrizes:
         print(f"{current_process().name}: resolvendo quebra-cabeças {numero}")
 
-        thread_items = [[] for _ in range(num_threads)]
-
-        sets_linhas = [(set(), Lock()) for _ in range(9)]
-        sets_colunas = [(set(), Lock()) for _ in range(9)]
-        sets_regioes = [(set(), Lock()) for _ in range(9)]
-
-        # dividir os itens para as threads
+        linhas = [Test(i + 1, TestType.LINHA, linha) for i, linha in enumerate(matriz)]
+        colunas = [
+            Test(i + 1, TestType.COLUNA, [linha[i] for linha in matriz])
+            for i in range(9)
+        ]
+        regioes = [Test(i + 1, TestType.REGIAO, []) for i in range(9)]
         for i in range(9):
             for j in range(9):
-                thread_items[(9 * i + j) % num_threads].append((i, j))
+                regioes[REGIOES[i, j]].elementos.append(matriz[i][j])
+
+        testes = linhas + colunas + regioes
+
+        thread_items = [[] for _ in range(num_threads)]
+        for i in range(len(testes)):
+            thread_items[i % num_threads].append(testes[i])
 
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             futures = [
-                executor.submit(
-                    thread_funk,
-                    matriz,
-                    thread_items[n],
-                    sets_linhas,
-                    sets_colunas,
-                    sets_regioes
-                )
+                executor.submit(thread_funk, thread_items[n])
                 for n in range(num_threads)
             ]
 
@@ -68,37 +80,12 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
         print(msg)
 
 
-def thread_funk(
-    matriz: Matriz,
-    thread_items: list[tuple[int, int]],
-    sets_linhas,
-    sets_colunas,
-    sets_regioes,
-):
+def thread_funk(testes: list[Test]):
     erros = set()
 
-    for posicao in thread_items:
-        regiao = REGIOES[posicao]
-        i, j = posicao
-        numero = matriz[i][j]
-
-        with sets_linhas[i][1]:
-            if numero not in sets_linhas[i][0]:
-                sets_linhas[i][0].add(numero)
-            else:
-                erros.add(f'L{i+1}')
-
-        with sets_colunas[i][1]:
-            if numero not in sets_colunas[j][0]:
-                sets_colunas[j][0].add(numero)
-            else:
-                erros.add(f'C{j+1}')
-
-        with sets_regioes[regiao][1]:
-            if numero not in sets_regioes[regiao][0]:
-                sets_regioes[regiao][0].add(numero)
-            else:
-                erros.add(f'R{regiao+1}')
+    for i, tipo, elementos in testes:
+        if len(set(elementos)) != 9:
+            erros.add(tipo.value + str(i))
 
     return erros
 
