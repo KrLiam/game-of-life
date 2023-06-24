@@ -142,7 +142,7 @@ def sudoku(arquivo: str, num_processos: int, num_threads: int):
     for processo in processos:
         processo.start()
     for processo in processos:
-        processo.join
+        processo.join()
 
 
 def main():
