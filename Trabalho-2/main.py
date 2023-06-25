@@ -1,8 +1,6 @@
 from argparse import ArgumentParser
-from collections import namedtuple
 from enum import Enum
 from multiprocessing import Process, current_process
-from threading import Lock
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 from typing import NamedTuple
@@ -45,10 +43,7 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
             Test(i + 1, TestType.COLUNA, [linha[i] for linha in matriz])
             for i in range(9)
         ]
-        regioes = [Test(i + 1, TestType.REGIAO, []) for i in range(9)]
-        for i in range(9):
-            for j in range(9):
-                regioes[REGIOES[i, j]].elementos.append(matriz[i][j])
+        regioes = [Test(k + 1, TestType.REGIAO, [matriz[i][j] for i, j in POSICOES[k]]) for k in range(9)]
 
         testes = linhas + colunas + regioes
 
@@ -137,7 +132,7 @@ def main():
 
 # oi professor, isso aqui é para ganhar desempenho, já que é mais rápido acessar o hash map
 # do que a thread ter que calcular a região de cada elemento
-REGIOES = {
+REGIOES: dict[tuple[int, int], int] = {
     (0, 0): 0,
     (0, 1): 0,
     (0, 2): 0,
@@ -220,6 +215,18 @@ REGIOES = {
     (8, 7): 8,
     (8, 8): 8,
 }
+POSICOES: dict[int, tuple[tuple[int, int]]] = {
+    0: ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)),
+    1: ((0, 3), (0, 4), (0, 5), (1, 3), (1, 4), (1, 5), (2, 3), (2, 4), (2, 5)),
+    2: ((0, 6), (0, 7), (0, 8), (1, 6), (1, 7), (1, 8), (2, 6), (2, 7), (2, 8)),
+    3: ((3, 0), (3, 1), (3, 2), (4, 0), (4, 1), (4, 2), (5, 0), (5, 1), (5, 2)),
+    4: ((3, 3), (3, 4), (3, 5), (4, 3), (4, 4), (4, 5), (5, 3), (5, 4), (5, 5)),
+    5: ((3, 6), (3, 7), (3, 8), (4, 6), (4, 7), (4, 8), (5, 6), (5, 7), (5, 8)),
+    6: ((6, 0), (6, 1), (6, 2), (7, 0), (7, 1), (7, 2), (8, 0), (8, 1), (8, 2)),
+    7: ((6, 3), (6, 4), (6, 5), (7, 3), (7, 4), (7, 5), (8, 3), (8, 4), (8, 5)),
+    8: ((6, 6), (6, 7), (6, 8), (7, 6), (7, 7), (7, 8), (8, 6), (8, 7), (8, 8)),
+}
+
 
 if __name__ == "__main__":
     main()
