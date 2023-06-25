@@ -35,6 +35,7 @@ def ler_solucoes(arquivo: str) -> list[Matriz]:
 
 
 def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
+    ordem_print = {"L": 0, "C": 1, "R": 2}
     for numero, matriz in matrizes:
         print(f"{current_process().name}: resolvendo quebra-cabeças {numero}")
 
@@ -68,7 +69,7 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
             threads = []
             for i, erros in enumerate(results):
                 if erros:
-                    threads.append(f"T{i+1}: " + ", ".join(sorted(erros)))
+                    threads.append(f"T{i+1}: " + ", ".join(sorted(erros, key=lambda x: ordem_print[x[0]])))
 
             msg += "(" + "; ".join(threads) + ")"
 
@@ -97,8 +98,8 @@ def sudoku(arquivo: str, num_processos: int, num_threads: int):
     if num_threads <= 0:
         print("O número de threads deve ser maior que 0!")
         return
-    if num_threads > 81:
-        num_threads = 81
+    if num_threads > 27:
+        num_threads = 27
 
     proc_tabuleiros = [[] for i in range(num_processos)]
     for i in range(len(solucoes)):
