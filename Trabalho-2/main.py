@@ -21,7 +21,7 @@ class Test(NamedTuple):
     elementos: list[int]
 
 
-ORDEM_PRINT = {TestType.LINHA.value: 0, TestType.COLUNA.value: 1, TestType.REGIAO.value: 2}
+ORDEM_PRINT = {t.value: i for i, t in enumerate(TestType)}
 
 
 POSICOES: dict[int, tuple[tuple[int, int]]] = {
