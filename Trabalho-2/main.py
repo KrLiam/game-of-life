@@ -52,7 +52,7 @@ def ler_solucoes(arquivo: str) -> list[Matriz]:
 
 def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
     for numero, matriz in matrizes:
-        # print(f"{current_process().name}: resolvendo quebra-cabeças {numero}")
+        print(f"{current_process().name}: resolvendo quebra-cabeças {numero}")
 
         linhas = [Test(i + 1, TestType.LINHA, linha) for i, linha in enumerate(matriz)]
         colunas = [
@@ -74,9 +74,7 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
             ]
 
         results = [future.result() for future in futures]
-
-        flat_results = reduce(lambda v, acc: acc.union(v), (s for s in results), set())
-        erros_totais = len(flat_results)
+        erros_totais = sum(len(s) for s in results)
 
         msg = f"{current_process().name}: {erros_totais} erros encontrados "
 
@@ -88,7 +86,7 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
 
             msg += "(" + "; ".join(threads) + ")"
 
-        # print(msg)
+        print(msg)
 
 
 def thread_funk(testes: list[Test]):
