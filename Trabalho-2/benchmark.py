@@ -93,7 +93,7 @@ def benchmark(
     ax2.set_ylabel("Speedup")
 
     # plt.show()
-    plt.savefig("benchmark.png")
+    plt.savefig("benchmark.png", bbox_inches="tight")
 
 
 def main():
