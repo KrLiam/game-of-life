@@ -41,7 +41,7 @@ def ler_solucoes(arquivo: str) -> list[Matriz]:
     with open(arquivo, "rt") as f:
         txt = f.read()
 
-    boards = txt.split("\n\n")
+    boards = txt.strip().split("\n\n")
 
     for i, board in enumerate(boards):
         matriz = [[int(x) for x in line] for line in board.split("\n")]
