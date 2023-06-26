@@ -35,12 +35,14 @@ def benchmark():
     ax1.set_title(f"{RANGE[0]}-{RANGE[-1]} Processos, {NUM_THREADS} thread")
     ax1.plot(RANGE, speedup_por_processos, "r")
     ax1.set_xbound(RANGE[0], RANGE[-1])
+    ax1.xaxis.get_major_locator().set_params(integer=True)
     ax1.set_xlabel("Número de Processos")
     ax1.set_ylabel("Speedup")
 
     ax2.set_title(f"{NUM_PROCESSOS} Processos, {RANGE[0]}-{RANGE[-1]} threads")
     ax2.plot(RANGE, speedup_por_threads, "r")
     ax2.set_xbound(RANGE[0], RANGE[-1])
+    ax2.xaxis.get_major_locator().set_params(integer=True)
     ax2.set_xlabel("Número de Threads")
     ax2.set_ylabel("Speedup")
 
