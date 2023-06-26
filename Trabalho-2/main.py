@@ -82,7 +82,7 @@ def processo_func(num_threads: int, matrizes: Tuple[str, Matriz]):
             threads = []
             for i, erros in enumerate(results):
                 if erros:
-                    threads.append(f"T{i+1}: " + ", ".join(sorted(erros, key=lambda x: ORDEM_PRINT[x[0]])))
+                    threads.append(f"T{i+1}: " + ", ".join(sorted(erros, key=lambda x: (ORDEM_PRINT[x[0]], x[1]))))
 
             msg += "(" + "; ".join(threads) + ")"
 
