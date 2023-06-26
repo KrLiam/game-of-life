@@ -50,7 +50,7 @@ def ler_solucoes(arquivo: str) -> List[Matriz]:
     return boards
 
 
-def processo_funk(num_threads: int, matrizes: Tuple[str, Matriz]):
+def processo_func(num_threads: int, matrizes: Tuple[str, Matriz]):
     for numero, matriz in matrizes:
         print(f"{current_process().name}: resolvendo quebra-cabeças {numero}")
 
@@ -69,7 +69,7 @@ def processo_funk(num_threads: int, matrizes: Tuple[str, Matriz]):
 
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             futures = [
-                executor.submit(thread_funk, thread_items[n])
+                executor.submit(thread_func, thread_items[n])
                 for n in range(num_threads)
             ]
 
@@ -89,7 +89,7 @@ def processo_funk(num_threads: int, matrizes: Tuple[str, Matriz]):
         print(msg)
 
 
-def thread_funk(testes: List[Test]):
+def thread_func(testes: List[Test]):
     erros = set()
 
     for i, tipo, elementos in testes:
@@ -121,7 +121,7 @@ def sudoku(arquivo: str, num_processos: int, num_threads: int):
     processos = [
         Process(
             name=f"Processo {i+1}",
-            target=processo_funk,
+            target=processo_func,
             args=(num_threads, proc_tabuleiros[i]),
         )
         for i in range(num_processos)
