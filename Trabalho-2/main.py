@@ -2,11 +2,11 @@ from argparse import ArgumentParser
 from enum import Enum
 from multiprocessing import Process, current_process
 from concurrent.futures import ThreadPoolExecutor
-from functools import cache, reduce
-from typing import NamedTuple
+from functools import lru_cache
+from typing import NamedTuple, List, Tuple, Dict
 
 
-Matriz = list[list[int]]
+Matriz = List[List[int]]
 
 
 class TestType(Enum):
@@ -18,13 +18,13 @@ class TestType(Enum):
 class Test(NamedTuple):
     i: int
     tipo: TestType
-    elementos: list[int]
+    elementos: List[int]
 
 
 ORDEM_PRINT = {t.value: i for i, t in enumerate(TestType)}
 
 
-POSICOES: dict[int, tuple[tuple[int, int]]] = {
+POSICOES: Dict[int, Tuple[Tuple[int, int]]] = {
     0: ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)),
     1: ((0, 3), (0, 4), (0, 5), (1, 3), (1, 4), (1, 5), (2, 3), (2, 4), (2, 5)),
     2: ((0, 6), (0, 7), (0, 8), (1, 6), (1, 7), (1, 8), (2, 6), (2, 7), (2, 8)),
@@ -36,8 +36,8 @@ POSICOES: dict[int, tuple[tuple[int, int]]] = {
     8: ((6, 6), (6, 7), (6, 8), (7, 6), (7, 7), (7, 8), (8, 6), (8, 7), (8, 8)),
 }
 
-@cache
-def ler_solucoes(arquivo: str) -> list[Matriz]:
+@lru_cache(maxsize=None)
+def ler_solucoes(arquivo: str) -> List[Matriz]:
     with open(arquivo, "rt") as f:
         txt = f.read()
 
@@ -50,7 +50,7 @@ def ler_solucoes(arquivo: str) -> list[Matriz]:
     return boards
 
 
-def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
+def processo_funk(num_threads: int, matrizes: Tuple[str, Matriz]):
     for numero, matriz in matrizes:
         print(f"{current_process().name}: resolvendo quebra-cabeças {numero}")
 
@@ -89,7 +89,7 @@ def processo_funk(num_threads: int, matrizes: tuple[str, Matriz]):
         print(msg)
 
 
-def thread_funk(testes: list[Test]):
+def thread_funk(testes: List[Test]):
     erros = set()
 
     for i, tipo, elementos in testes:
