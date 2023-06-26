@@ -3,25 +3,26 @@ from timeit import timeit
 import matplotlib.pyplot as plt
 
 
+RANGE = list(range(1, 11))
+NUM_THREADS = 1
+NUM_PROCESSOS = 4
+NUMBER = 5
+INPUT_NAME = "input-sample.txt"
 
-def f(n):
+def f(processos, threads):
     def g():
-        print("benchmark", n)
-        return sudoku("input-sample.txt", n, 1)
+        print(f"benchmark {processos=} {threads=}")
+        return sudoku(INPUT_NAME, processos, threads)
     return g
 
 def benchmark():
-    RANGE = list(range(1, 11))
-    NUM_THREADS = 1
-    NUM_PROCESSOS = 4
-    NUMBER = 5
 
     por_processos = [
-        timeit(lambda: sudoku("input-sample.txt", n, NUM_THREADS), number=NUMBER)
+        timeit(f(n, NUM_THREADS), number=NUMBER)
         for n in RANGE
     ]
     por_threads = [
-        timeit(lambda: sudoku("input-sample.txt", NUM_PROCESSOS, n), number=NUMBER)
+        timeit(f(NUM_PROCESSOS, n), number=NUMBER)
         for n in RANGE
     ]
 
@@ -29,6 +30,7 @@ def benchmark():
     speedup_por_threads = [por_processos[0] / n for n in por_threads]
 
     fig, (ax1, ax2) = plt.subplots(1, 2)
+    fig.set_size_inches(12, 5)
 
     ax1.set_title(f"{RANGE[0]}-{RANGE[-1]} Processos, {NUM_THREADS} thread")
     ax1.plot(RANGE, speedup_por_processos, "r")
@@ -42,7 +44,8 @@ def benchmark():
     ax2.set_xlabel("Número de Threads")
     ax2.set_ylabel("Speedup")
 
-    plt.show()
+    # plt.show()
+    plt.savefig("benchmark.png")
 
 
 
