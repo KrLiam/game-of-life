@@ -7,7 +7,7 @@ RANGE = list(range(1, 11))
 NUM_THREADS = 1
 NUM_PROCESSOS = 4
 NUMBER = 5
-INPUT_NAME = "input-sample.txt"
+INPUT_NAME = "input-sample-big.txt"
 
 def f(processos, threads):
     def g():
@@ -27,7 +27,7 @@ def benchmark():
     ]
 
     speedup_por_processos = [por_processos[0] / n for n in por_processos]
-    speedup_por_threads = [por_processos[0] / n for n in por_threads]
+    speedup_por_threads = [por_threads[0] / n for n in por_threads]
 
     fig, (ax1, ax2) = plt.subplots(1, 2)
     fig.set_size_inches(12, 5)
