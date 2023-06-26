@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 from enum import Enum
 from multiprocessing import Process, current_process
 from concurrent.futures import ThreadPoolExecutor
-from functools import reduce
+from functools import cache, reduce
 from typing import NamedTuple
 
 
@@ -36,7 +36,7 @@ POSICOES: dict[int, tuple[tuple[int, int]]] = {
     8: ((6, 6), (6, 7), (6, 8), (7, 6), (7, 7), (7, 8), (8, 6), (8, 7), (8, 8)),
 }
 
-
+@cache
 def ler_solucoes(arquivo: str) -> list[Matriz]:
     with open(arquivo, "rt") as f:
         txt = f.read()
